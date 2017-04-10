@@ -5,6 +5,10 @@ void outputFile(char *filePath) {
 	std::ifstream file(filePath);
 	std::string line;
 
+	if (!file.good()) {
+		std::ofstream file(filePath);
+	}
+
 	while (std::getline(file, line)) {
 		printf("%s\r\n", line.c_str());
 	}
