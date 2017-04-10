@@ -1,6 +1,7 @@
 #include <fstream>
 #include <string>
 #include <stdlib.h>
+#include <windows.h>
 
 void checkFile(char *filePath) {
 	std::ifstream file(filePath);
@@ -18,8 +19,13 @@ void outputFile(char *filePath) {
 	}
 }
 
-void readKey() {
+void hideCursor() {
+	CONSOLE_CURSOR_INFO info;
+	info.bVisible = FALSE;
+	info.dwSize = 100;
 
+	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+	SetConsoleCursorInfo(consoleHandle, &info);
 }
 
 int main(int argc, char **argv) {
@@ -31,9 +37,16 @@ int main(int argc, char **argv) {
 	}
 	
 	checkFile(argv[1]);
+	hideCursor();
+
+	COORD coord;
+	coord.X = 0;
+	coord.Y = 0;
+
+	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	while (true) {
-		system("cls");
+		SetConsoleCursorPosition(consoleHandle, coord);
 		outputFile(argv[1]);
 	}
 }
