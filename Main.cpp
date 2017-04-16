@@ -43,7 +43,7 @@ void outputFileMap() {
 	SetConsoleCursorPosition(consoleHandle, coord);
 }
 
-void hideCursor() {
+void showCursor() {
 	CONSOLE_CURSOR_INFO info;
 	info.bVisible = TRUE;
 	info.dwSize = 25;
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
 	}
 	
 	checkFile(argv[1]);
-	hideCursor();
+	showCursor();
 	
 	readFileToMap(argv[1]);
 	outputFileMap();
