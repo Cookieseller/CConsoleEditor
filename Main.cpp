@@ -6,6 +6,8 @@
 #include <list>
 #include "Keys.h"
 
+#include <iostream>
+
 std::list<std::string> fileMap;
 
 void checkFile(char *filePath) {
@@ -25,35 +27,69 @@ void readFileToMap(char *filePath) {
 }
 
 void outputFileMap() {
-	COORD coord;
-	coord.X = 1;
-	coord.Y = 0;
+	COORD coord = {0, 0};
 	
 	system("cls");
 	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleCursorPosition(consoleHandle, coord);
 	
-	for (auto line : fileMap) {
-		printf("%s\r\n", line.c_str());
+	for (auto it = fileMap.begin(); it != fileMap.end(); ++it) {
+		std::cout << *it;
+		if (it != std::prev(fileMap.end())) {
+			std::cout << "\r\n";
+		}
 	}
+	coord = {0, 0};
+	SetConsoleCursorPosition(consoleHandle, coord);
 }
 
 void hideCursor() {
 	CONSOLE_CURSOR_INFO info;
-	info.bVisible = FALSE;
-	info.dwSize = 100;
+	info.bVisible = TRUE;
+	info.dwSize = 25;
 
 	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleCursorInfo(consoleHandle, &info);
 }
 
 void insertNewLine() {
-	POINT pos;
-	GetCursorPos(&pos);
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
 	
-	auto it = std::next(fileMap.begin(), pos.y);
-	fileMap.insert(it, "");
-	outputFileMap();
+	if(GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+		int x = csbi.dwCursorPosition.X;
+        int y = csbi.dwCursorPosition.Y;
+
+		auto it = std::next(fileMap.begin(), y);
+		if (x > 0 && it->length() > 0 && x  < it->length()) {
+			auto stay = it->substr(0, x);
+			auto nextLine = it->substr(x);
+			
+			*it = stay;
+			fileMap.insert(++it, nextLine);
+		} else if (x == 0) {
+			fileMap.insert(it, "");
+		} else if (x > it->length()) {
+			fileMap.insert(++it, "");
+		}
+		outputFileMap();
+		
+		COORD coord = {0, (SHORT)++y};
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+	}
+}
+
+void moveCursor(auto movePosition) {
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+	if(GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+		int x = csbi.dwCursorPosition.X;
+        int y = csbi.dwCursorPosition.Y;
+		
+		movePosition(x, y);
+		
+		COORD coord = {(SHORT)x, (SHORT)y};
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+	}
 }
 
 int handleKeyPresses() {
@@ -63,14 +99,31 @@ int handleKeyPresses() {
 		if high bit is set key is pressed
 	}*/
 	
-	int key = _getche();
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	
+	GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+	int x = csbi.dwCursorPosition.X;
+	int y = csbi.dwCursorPosition.Y;
+
+	int key = _getch();
+	if (key == 0 || key == 0xE0) { // Arrow keys must be read twice, the first _getche just returns one of these two values
+		key = _getch();
+	}
 	if (key == VK_RETURN) {
 		insertNewLine();
-	}
-	if (key == VK_ESCAPE) {
+	} else if (key == VK_ESCAPE) {
 		return 1;
+	} else if (key == (int) MapVirtualKey(VK_UP, MAPVK_VK_TO_VSC)) {
+		moveCursor([] (int &x, int &y) {if (y > 0) y--;});
+	} else if (key == (int) MapVirtualKey(VK_DOWN, MAPVK_VK_TO_VSC)) {
+		moveCursor([] (int &x, int &y) {y++;});
+	} else if (key == (int) MapVirtualKey(VK_LEFT, MAPVK_VK_TO_VSC)) {
+		moveCursor([] (int &x, int &y) {if (x > 0) x--;});
+	} else if (key == (int) MapVirtualKey(VK_RIGHT, MAPVK_VK_TO_VSC)) {
+		moveCursor([] (int &x, int &y) {x++;});
+	} else if (iswascii(key) && isprint(key)) {
+		printf("%c", key);
 	}
-	
 	return 0;
 }
 
@@ -94,5 +147,6 @@ int main(int argc, char **argv) {
 		}
 	}
 	
+	system("cls");
 	return 0;
 }
