@@ -90,6 +90,30 @@ void moveCursor(auto movePosition) {
 	}
 }
 
+void moveToBOL() {
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+	if(GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+		int y = csbi.dwCursorPosition.Y;
+		COORD coord = {(SHORT)0, (SHORT)y};
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+	}
+}
+
+void moveToEOL() {
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+	if(GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi)) {
+		int y = csbi.dwCursorPosition.Y;
+		int x = csbi.dwCursorPosition.Y;
+		
+		auto it = std::next(fileMap.begin(), y);
+		
+		COORD coord = {(SHORT)it->length(), (SHORT)y};
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+	}
+}
+
 int handleKeyPresses() {
 	/*SHORT tabKeyState = GetAsyncKeyState( VK_TAB );
 	if( ( 1 << 15 ) & tabKeyState )
@@ -119,7 +143,11 @@ int handleKeyPresses() {
 		moveCursor([] (int &x, int &y) {if (x > 0) x--;});
 	} else if (key == (int) MapVirtualKey(VK_RIGHT, MAPVK_VK_TO_VSC)) {
 		moveCursor([] (int &x, int &y) {x++;});
-	} else if (iswascii(key) && isprint(key)) {
+	} else if (key == (int) MapVirtualKey(VK_END, MAPVK_VK_TO_VSC)) {
+		moveToEOL();
+	} else if (key == (int) MapVirtualKey(VK_HOME, MAPVK_VK_TO_VSC)) {
+		moveToBOL();
+	}	else if (iswascii(key) && isprint(key)) {
 		printf("%c", key);
 	}
 	return 0;
